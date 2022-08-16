@@ -1,69 +1,90 @@
-// express
-var express = require('express');
-var logger = require('morgan');
-var mongoose = require('mongoose');
-var User = require('./modules/user.js');
+let express = require('express');
+let mongoose = require('mongoose');
+let User = require('./models/user');
 
-// connect to database
-mongoose.connect("mongodb://127.0.0.1:27017/sample", (err) => {
-    console.log(err ? err : "Connected to databse")
+//connect to database
+
+mongoose.connect('mongodb://127.0.0.1:27017/sample',{ useNewUrlParser: true,  useUnifiedTopology: true },  (err) => {
+    console.log(err ? err : "connected to db");
 })
-// instantiate
-var app = express();
 
-// middleware
-app.use(logger('dev'));
+let app = express();
+
 app.use(express.json());
+app.use(express.urlencoded({extended: false}));
 
-// routes
-app.get('/', (req, res) => {
-    res.send("Hey")
-})
-// creation 
+//create a document in db
+
 app.post('/users', (req, res) => {
-    User.create('/users', (err) => {
+    User.create(req.body, (err, user) => {
         console.log(err);
-        res.json(req.body);
-    });
-});
+        res.json(user);
+    })
+})
+
+//Find documents from db
+
 app.get('/users', (req, res) => {
-    var user = req.body
-    User.find((err) => {
-        console.log(err);
-        res.json(user);
-    });
+    User.find({}, (err, user,next) => {
+        if(err) return next(err);
+        res.json({products: user});
+    })
 })
+
 app.get('/users/:id', (req, res) => {
-    var user = req.body;
-    var id = req.params.id;
-    User.find({id: id}, (err) => {
-        console.log(err);
+    let id = req.params.id;
+    
+    //find a document / documents using a query if an empty object is passed entire documents in the collection will be returned in an array
+    // User.find({ "_id": "60de8e23d7ae4c0fe2600768"}, (err, user) => {
+    //     if(err) return next(err);
+    //     res.json(user);
+
+    // })
+
+    //find a specific document using a query(condition) form database and return the first document satisfies the condition
+
+    // User.findOne({"_id": "60de8e23d7ae4c0fe2600768"}, (err, user) => {
+    //     if(err) return next(err);
+    //     res.json(user);
+    // })
+
+    //find a specific document using the unique object id of the document
+
+    User.findById(id, (err, user,next) => {
+        if(err) return next(err);
         res.json(user);
-    });
+    })
 })
-// we use find one to get the specified user
-app.get('/users/:id', (req, res) => {
-    var user = req.body;
-    var id = req.params.id;
-    User.findOne({id: id}, (err) => {
-        console.log(err);
+
+//Updating a document
+
+app.put('/users/:id', (req, res) => {
+    let id = req.params.id;
+    // User.update({ "_id": "60de8e23d7ae4c0fe2600768"}, req.body, {new: true}, (err, user) => {
+    //     if(err) return next(err);
+    //     res.json(user);
+    // })
+
+    // User.updateOne({"_id": "60de8e23d7ae4c0fe2600768"}, req.body, {new: true}, (err, user) => {
+    //     if(err) return next(err);
+    //     res.json(user);
+    // })
+
+    User.findByIdAndUpdate(id, req.body, {new: true}, (err, user,next) => {
+        if(err) return next(err);
         res.json(user);
-    });
+    })
 })
-// we use findById to get the specified user using Id
-app.get('/users/:id', (req, res) => {
-    var user = req.body;
-    var id = req.params.id;
-    User.findById({id: id}, (err) => {
-        console.log(err);
-        res.json(user);
-    });
+
+//Delete a document
+
+app.delete('/users/:id', (req, res) => {
+    let id = req.params.id;
+    User.findByIdAndDelete(id, (err, user,next) => {
+        if(err) return next(err);
+        res.json(`${user.name} is deleted`);
+    })
 })
-// error handler
-app.use((err, req, res,) => {
-    console.log(err);
-})
-// listen
 app.listen(3000, () => {
-    console.log("listening on port 3000...");
+    console.log('Server is listening on port 3k');
 })
